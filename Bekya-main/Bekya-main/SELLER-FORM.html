@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>BEKYA · seller dashboard</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* (existing styles – unchanged) */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        /* CSS Variables – light mode (default) */
+        body {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --border-light: #e2e8f0;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            --hover-glow: 0 0 0 2px rgba(10, 61, 42, 0.2), 0 0 20px rgba(10, 61, 42, 0.15);
+            --accent-green: #0A3D2A;
+            --accent-soft: #eef7f2;
+            --progress-bg: #e2e8f0;
+            --icon-color: #0A3D2A;
+            transition: background-color 0.3s ease, color 0.2s ease;
+        }
+
+        /* dark mode class */
+        body.dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --surface: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --border-light: #334155;
+            --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            --accent-green: #22c55e;
+            --accent-soft: rgba(34, 197, 94, 0.15);
+            --icon-color: #ffffff;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* layout */
+        .app-wrapper {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1.5rem 1.5rem 1rem;
+            width: 100%;
+        }
+
+        /* ----- HEADER (logo & toggle) ----- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 990; /* Lower than sidebar */
+            background: var(--bg-primary);
+            padding: 0.8rem 0;
+            width: 100%;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .menu-hamburger {
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--icon-color);
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            box-shadow: var(--card-shadow);
+        }
+
+        .menu-hamburger:hover {
+            background: var(--accent-soft);
+            transform: scale(1.05);
+        }
+
+        .logo-img {
+            height: 35px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--accent-green);
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn {
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: 40px;
+            padding: 0.6rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .toggle-btn i {
+            font-size: 1.2rem;
+            color: var(--accent-green);
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-glow);
+            border-color: var(--accent-green);
+        }
+
+        /* ----- DASHBOARD LAYOUT ----- */
+        .dashboard-container {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            flex: 0 0 240px;
+            background: var(--surface);
+            border-radius: 28px;
+            padding: 1.5rem 0.5rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(2px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: sticky;
+            top: 80px;
+            z-index: 100;
+        }
+
+        /* Sidebar Toggle State (Desktop) */
+        .sidebar.collapsed {
+            transform: translateX(-120%);
+            margin-left: -240px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.9rem 1.2rem;
+            border-radius: 18px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .menu-item i {
+            font-size: 1.2rem;
+            width: 1.8rem;
+            color: var(--icon-color);
+        }
+
+        .menu-item:hover {
+            background: var(--accent-soft);
+            color: var(--accent-green);
+            transform: scale(1.02);
+        }
+
+        .menu-item.active {
+            background: var(--accent-green);
+            color: white;
+            box-shadow: 0 8px 18px rgba(10, 61, 42, 0.3);
+        }
+
+        .menu-item.active i {
+            color: white;
+        }
+
+        .menu-item.logout {
+            color: #dc2626;
+            margin-top: 1rem;
+            border-top: 1px solid var(--border-light);
+            border-radius: 0;
+            padding-top: 1.5rem;
+        }
+        
+        .menu-item.logout i {
+            color: #dc2626;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            background: var(--surface);
+            border-radius: 32px;
+            padding: 2rem 2rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-light);
+            min-height: 70vh;
+            transition: all 0.3s ease;
+        }
+
+        /* sections */
+        .section {
+            display: none;
+            animation: fadeSlide 0.3s ease;
+        }
+
+        .section.active-section {
+            display: block;
+        }
+
+        @keyframes fadeSlide {
+            0% { opacity: 0.4; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-green), #2f8e6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin: 0.4rem 0 0.2rem;
+        }
+
+        .progress {
+            background: var(--progress-bg);
+            height: 10px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 0.8rem 0;
+        }
+
+        .progress-bar {
+            background: var(--accent-green);
+            height: 10px;
+            border-radius: 20px;
+            width: 0%;
+        }
+
+        .badge {
+            background: var(--accent-soft);
+            color: var(--accent-green);
+            padding: 0.25rem 0.8rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        button.primary {
+            background: var(--accent-green);
+            border: none;
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 6px 14px rgba(10,61,42,0.25);
+        }
+
+        button.primary:hover {
+            background: #0e5538;
+            transform: scale(1.02);
+            box-shadow: 0 10px 20px rgba(10,61,42,0.4);
+        }
+
+        button.secondary {
+            background: var(--surface);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button.secondary:hover {
+            background: var(--accent-soft);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            border-radius: 30px;
+            border: 1.5px solid var(--border-light);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(10,61,42,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .materials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .material-card {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            padding: 1rem;
+            border: 1px solid var(--border-light);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .material-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-glow);
+        }
+
+        .material-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 18px;
+            background: #d9d9d9;
+        }
+
+        .delete-icon {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #dc2626;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            z-index: 2;
+        }
+
+        .delete-icon:hover {
+            background: #fee2e2;
+            transform: scale(1.1);
+        }
+
+        body.dark .delete-icon {
+            background: #2d3f42;
+            color: #f87171;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 350px;
+            margin-top: 0.5rem;
+        }
+
+        /* Overlay for mobile sidebar */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 998;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 1001; /* Higher than everything */
+                border-radius: 0 28px 28px 0;
+                margin-left: 0 !important;
+                transform: translateX(-100%);
+                opacity: 1;
+                pointer-events: none;
+                padding-top: 1rem;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+                opacity: 1;
+                pointer-events: auto;
+            }
+            /* Reset desktop collapsed state on mobile */
+            .sidebar.collapsed {
+                margin-left: 0 !important;
+                transform: translateX(-100%) !important;
+                opacity: 1 !important;
+            }
+            .main-content {
+                padding: 1.2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                padding: 0.6rem 0;
+            }
+            .logo {
+                font-size: 1.4rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-wrapper { padding: 1rem; }
+            .header { padding: 0.5rem 0; }
+            .main-content { padding: 1rem; border-radius: 24px; }
+            .menu-item { padding: 0.8rem 1rem; }
+        }
+
+        .impact-message {
+            background: var(--accent-soft);
+            border-radius: 50px;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-left: 6px solid var(--accent-green);
+        }
+
+        canvas { max-height: 250px; margin-top: 1rem; }
+
+        /* Profile Editing Styles */
+        .profile-edit-form {
+            display: none;
+            margin-top: 1.5rem;
+        }
+        .profile-edit-form.active {
+            display: block;
+        }
+        .profile-info.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body dir="ltr">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="app-wrapper">
+        <!-- HEADER (logo & toggle) -->
+        <header class="header">
+             <div class="header-left">
+                 <button id="sidebarToggle" class="menu-hamburger" aria-label="Toggle Sidebar">
+                      <i class="fas fa-bars"></i>
+                  </button>
+                  <a href="index.html" class="logo-wrapper">
+                      <img src="logo.png" alt="Logo" class="logo-img">
+                      <div class="logo">BEKYA</div>
+                  </a>
+              </div>
+         </header>
+
+        <!-- DASHBOARD -->
+        <div class="dashboard-container">
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar">
+                <nav class="sidebar-menu">
+                    <button class="menu-item active" data-section="overview"><i class="fas fa-home"></i> <span data-i18n="menu_overview">Overview</span></button>
+                    <button class="menu-item" data-section="addMaterial"><i class="fas fa-plus-circle"></i> <span data-i18n="menu_addMaterial">Add Material</span></button>
+                    <button class="menu-item" data-section="myMaterials"><i class="fas fa-recycle"></i> <span data-i18n="menu_myMaterials">My Materials</span></button>
+                    <button class="menu-item" data-section="statistics"><i class="fas fa-chart-line"></i> <span data-i18n="menu_statistics">Statistics</span></button>
+                    <button class="menu-item" data-section="rewards"><i class="fas fa-gift"></i> <span data-i18n="menu_rewards">Rewards / Points</span></button>
+                    <button class="menu-item" data-section="profile"><i class="fas fa-user-circle"></i> <span data-i18n="menu_profile">Profile</span></button>
+                    <button class="menu-item" data-section="settings"><i class="fas fa-cog"></i> <span data-i18n="menu_settings">Settings</span></button>
+                    <button class="menu-item logout" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span data-i18n="menu_logout">Logout</span></button>
+                </nav>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="main-content">
+                <!-- OVERVIEW SECTION -->
+                <section id="overview" class="section active-section">
+                    <h2 data-i18n="heading_overview">🌍 Overview</h2>
+                    <div class="card-grid">
+                        <div class="stat-card"><i class="fas fa-boxes"></i> <span data-i18n="total_materials">Total materials</span> <span class="stat-value" id="overviewTotalMaterials">0</span></div>
+                        <div class="stat-card"><i class="fas fa-coins"></i> <span data-i18n="total_points">Total points</span> <span class="stat-value" id="overviewTotalPoints">0</span></div>
+                    </div>
+                    <div class="impact-message" id="impactText">You helped recycle <strong>0g</strong> of materials. Keep saving the planet! 🌱</div>
+                    <h3 style="margin-top:2rem;" data-i18n="recent_uploads">Recent uploads</h3>
+                    <div id="recentUploads" class="materials-grid" style="grid-template-columns:repeat(auto-fill, minmax(200px,1fr));"></div>
+                </section>
+
+                <!-- ADD MATERIAL SECTION -->
+                <section id="addMaterial" class="section">
+                    <h2 data-i18n="heading_addMaterial">➕ Register material</h2>
+                    <div class="form-group">
+                        <label data-i18n="material_type">Material type</label>
+                        <select id="materialName">
+                            <option value="Aluminum" data-i18n="aluminum">Aluminum</option>
+                            <option value="Plastic" data-i18n="plastic">Plastic</option>
+                            <option value="Paper" data-i18n="paper">Paper</option>
+                            <option value="Glass" data-i18n="glass">Glass</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="weight_grams">Weight (grams)</label>
+                        <input type="number" id="materialWeight" placeholder="e.g. 500" min="1" data-i18n-placeholder="weight_placeholder">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="upload_image">Upload image</label>
+                        <input type="file" id="materialImage" accept="image/*">
+                    </div>
+                    <button class="primary" id="addMaterialBtn"><i class="fas fa-save"></i> <span data-i18n="add_material_btn">Add material</span></button>
+                </section>
+
+                <!-- MY MATERIALS SECTION -->
+                <section id="myMaterials" class="section">
+                    <h2 data-i18n="heading_myMaterials">📦 My materials</h2>
+                    <div id="materialsList" class="materials-grid"></div>
+                </section>
+
+                <!-- STATISTICS SECTION -->
+                <section id="statistics" class="section">
+                    <h2 data-i18n="heading_statistics">📊 Statistics</h2>
+                    <div class="card-grid">
+                        <div class="stat-card"><span data-i18n="total_grams">Total grams</span><span class="stat-value" id="statTotalGrams">0</span></div>
+                        <div class="stat-card"><span data-i18n="total_points_stat">Total points</span><span class="stat-value" id="statTotalPoints">0</span></div>
+                        <div class="stat-card"><span data-i18n="uploads">Uploads</span><span class="stat-value" id="statUploads">0</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <span data-i18n="hourly_increase">Hourly increase (last 24h vs previous)</span>
+                        <div class="stat-value" id="hourlyIncrease">+0%</div>
+                        <div class="progress"><div class="progress-bar" id="increaseBar" style="width:0%"></div></div>
+                    </div>
+                    <canvas id="statsChart"></canvas>
+                </section>
+
+                <!-- REWARDS SECTION -->
+                <section id="rewards" class="section">
+                    <h2 data-i18n="heading_rewards">🏆 Rewards</h2>
+                    <div class="stat-card">
+                        <i class="fas fa-star"></i> <span data-i18n="total_points_rewards">Total points:</span> <span id="rewardPoints">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span data-i18n="next_milestone">Next milestone: 1000 pts</span>
+                        <div class="progress"><div class="progress-bar" id="milestoneBar" style="width:0%"></div></div>
+                        <p id="milestoneText">0/1000</p>
+                    </div>
+                    <div class="badge" data-i18n="milestone_badge">♻️ 500 pts = Bronze, 1000 pts = Silver, 5000 = Gold</div>
+                </section>
+
+                <!-- PROFILE SECTION -->
+                <section id="profile" class="section">
+                    <div class="flex-between">
+                        <h2 data-i18n="heading_profile">👤 Seller profile</h2>
+                        <button class="primary" id="editProfileBtn" style="padding: 0.5rem 1.2rem; font-size: 0.9rem;">
+                            <i class="fas fa-edit"></i> <span data-i18n="edit_btn">Edit</span>
+                        </button>
+                    </div>
+
+                    <div id="profileInfo" class="profile-info">
+                        <div class="stat-card">
+                            <p style="margin-bottom: 0.8rem;"><i class="fas fa-user"></i> <strong data-i18n="name">Name:</strong> <span id="profileName"></span></p>
+                            <p style="margin-bottom: 0.8rem;"><i class="fas fa-phone"></i> <strong data-i18n="phone">Phone:</strong> <span id="profilePhone"></span></p>
+                            <p><i class="fas fa-id-badge"></i> <strong data-i18n="role">Role:</strong> <span data-i18n="seller">Seller</span></p>
+                        </div>
+                    </div>
+
+                    <div id="profileEditForm" class="profile-edit-form">
+                        <div class="stat-card">
+                            <div class="form-group">
+                                <label data-i18n="name">Name:</label>
+                                <input type="text" id="editName" placeholder="Enter your name">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="phone">Phone:</label>
+                                <input type="text" id="editPhone" placeholder="Enter your phone">
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="primary" id="saveProfileBtn"><i class="fas fa-save"></i> <span data-i18n="save_btn">Save Changes</span></button>
+                                <button class="secondary" id="cancelEditBtn"><span data-i18n="cancel_btn">Cancel</span></button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SETTINGS SECTION with moved toggle buttons -->
+                <section id="settings" class="section">
+                    <h2 data-i18n="heading_settings">⚙️ Settings</h2>
+                    <div class="settings-buttons">
+                        <!-- Dark mode toggle (same button) -->
+                        <button class="toggle-btn" id="themeToggle" aria-label="Toggle theme">
+                            <i id="themeIcon" class="fas fa-sun"></i>
+                            <span data-i18n="theme_toggle">Light / Dark</span>
+                        </button>
+                        <!-- Language toggle (same button) -->
+                        <button class="toggle-btn" id="langToggle" aria-label="Toggle language">
+                            <i class="fas fa-language"></i>
+                            <span id="langLabel" data-i18n="lang_toggle">English</span>
+                        </button>
+                    </div>
+                    <p style="margin-top: 2rem; color: var(--text-secondary);" data-i18n="settings_note">Theme and language toggles — same functionality.</p>
+                </section>
+            </main>
+        </div>
+    </div>
+<script>
+(function() {
+    // ────────────────────────────────────────────────
+    //               User ID Handling (Improved)
+    // ────────────────────────────────────────────────
+    let currentUserId = localStorage.getItem('currentUserId');
+    if (currentUserId) {
+        currentUserId = Number(currentUserId);  // حول لـ number من البداية
+        if (isNaN(currentUserId)) currentUserId = null;
+    }
+
+    // ────────────────────────────────────────────────
+    //               TRANSLATION DICTIONARY
+    // ────────────────────────────────────────────────
+    const translations = {
+        en: {
+            menu_overview: "Overview",
+            menu_addMaterial: "Add Material",
+            menu_myMaterials: "My Materials",
+            menu_statistics: "Statistics",
+            menu_rewards: "Rewards / Points",
+            menu_profile: "Profile",
+            menu_settings: "Settings",
+            menu_editProfile: "Edit Profile",
+            menu_logout: "Logout",
+            heading_overview: "🌍 Overview",
+            heading_addMaterial: "➕ Register material",
+            heading_myMaterials: "📦 My materials",
+            heading_statistics: "📊 Statistics",
+            heading_rewards: "🏆 Rewards",
+            heading_profile: "👤 Seller profile",
+            heading_settings: "⚙️ Settings",
+            total_materials: "Total materials",
+            total_points: "Total points",
+            recent_uploads: "Recent uploads",
+            material_type: "Material type",
+            aluminum: "Aluminum",
+            plastic: "Plastic",
+            paper: "Paper",
+            glass: "Glass",
+            weight_grams: "Weight (grams)",
+            weight_placeholder: "e.g. 500",
+            upload_image: "Upload image",
+            add_material_btn: "Add material",
+            total_grams: "Total grams",
+            total_points_stat: "Total points",
+            uploads: "Uploads",
+            hourly_increase: "Hourly increase (last 24h vs previous)",
+            total_points_rewards: "Total points:",
+            next_milestone: "Next milestone: 1000 pts",
+            milestone_badge: "♻️ 500 pts = Bronze, 1000 pts = Silver, 5000 = Gold",
+            name: "Name:",
+            phone: "Phone:",
+            role: "Role:",
+            seller: "Seller",
+            theme_toggle: "Light / Dark",
+            lang_toggle: "English",
+            settings_note: "Theme and language toggles — same functionality.",
+            no_materials: "No materials added yet.",
+            impact_message: "You helped recycle <strong>{grams}g</strong> of materials. Keep saving the planet! 🌱",
+            edit_btn: "Edit",
+            save_btn: "Save Changes",
+            cancel_btn: "Cancel"
+        },
+        ar: {
+            menu_overview: "نظرة عامة",
+            menu_addMaterial: "إضافة مادة",
+            menu_myMaterials: "المواد الخاصة بي",
+            menu_statistics: "الإحصائيات",
+            menu_rewards: "المكافآت / النقاط",
+            menu_profile: "الملف الشخصي",
+            menu_settings: "الإعدادات",
+            menu_editProfile: "تعديل الملف الشخصي",
+            menu_logout: "تسجيل الخروج",
+            heading_overview: "🌍 نظرة عامة",
+            heading_addMaterial: "➕ تسجيل مادة",
+            heading_myMaterials: "📦 المواد الخاصة بي",
+            heading_statistics: "📊 الإحصائيات",
+            heading_rewards: "🏆 المكافآت",
+            heading_profile: "👤 ملف البائع",
+            heading_settings: "⚙️ الإعدادات",
+            total_materials: "إجمالي المواد",
+            total_points: "إجمالي النقاط",
+            recent_uploads: "آخر الرفعات",
+            material_type: "نوع المادة",
+            aluminum: "ألومنيوم",
+            plastic: "بلاستيك",
+            paper: "ورق",
+            glass: "زجاج",
+            weight_grams: "الوزن (جرام)",
+            weight_placeholder: "مثال: 500",
+            upload_image: "رفع صورة",
+            add_material_btn: "إضافة مادة",
+            total_grams: "إجمالي الجرامات",
+            total_points_stat: "إجمالي النقاط",
+            uploads: "الرفعات",
+            hourly_increase: "الزيادة خلال آخر 24 ساعة مقارنة بالسابقة",
+            total_points_rewards: "إجمالي النقاط:",
+            next_milestone: "الهدف التالي: 1000 نقطة",
+            milestone_badge: "♻️ 500 نقطة = برونزي، 1000 = فضي، 5000 = ذهبي",
+            name: "الاسم:",
+            phone: "الهاتف:",
+            role: "الدور:",
+            seller: "بائع",
+            theme_toggle: "فاتح / داكن",
+            lang_toggle: "عربي",
+            settings_note: "أزرار السمة واللغة — نفس الوظائف.",
+            no_materials: "لا توجد مواد مضافة بعد.",
+            impact_message: "لقد ساعدت في إعادة تدوير <strong>{grams}g</strong> من المواد. استمر في إنقاذ الكوكب! 🌱",
+            edit_btn: "تعديل",
+            save_btn: "حفظ التغييرات",
+            cancel_btn: "إلغاء"
+        }
+    };
+
+    // ────────────────────────────────────────────────
+    //               HELPERS
+    // ────────────────────────────────────────────────
+    function getCurrentLang() {
+        return document.body.dir === 'rtl' ? 'ar' : 'en';
+    }
+
+    function applyTranslations(lang) {
+        const elements = document.querySelectorAll('[data-i18n]');
+        elements.forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[lang]?.[key]) {
+                if (el.tagName === 'OPTION') {
+                    el.textContent = translations[lang][key];
+                } else {
+                    el.innerHTML = translations[lang][key];
+                }
+            }
+        });
+
+        const placeholders = document.querySelectorAll('[data-i18n-placeholder]');
+        placeholders.forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (translations[lang]?.[key]) {
+                el.placeholder = translations[lang][key];
+            }
+        });
+    }
+
+    // ────────────────────────────────────────────────
+    //               INITIAL STORAGE DEFAULTS
+    // ────────────────────────────────────────────────
+    if (!localStorage.getItem('userName')) localStorage.setItem('userName', 'Amina Al-Rashid');
+    if (!localStorage.getItem('userPhone')) localStorage.setItem('userPhone', '+966 50 123 4567');
+    if (!localStorage.getItem('materials')) localStorage.setItem('materials', JSON.stringify([]));
+
+    let materials = JSON.parse(localStorage.getItem('materials')) || [];
+    let chartInstance = null;
+
+    function saveMaterials() {
+        localStorage.setItem('materials', JSON.stringify(materials));
+        renderAllSections();
+    }
+
+    function renderAllSections() {
+        renderMyMaterials();
+        renderStatistics();
+        renderOverview();
+        renderRewards();
+        renderProfile();
+    }
+
+    // ────────────────────────────────────────────────
+    //               RENDER FUNCTIONS (with safe userId compare)
+    // ────────────────────────────────────────────────
+    function renderProfile() {
+        document.getElementById('profileName').innerText = localStorage.getItem('userName') || '—';
+        document.getElementById('profilePhone').innerText = localStorage.getItem('userPhone') || '—';
+    }
+
+    function renderRewards() {
+        const userMaterials = currentUserId 
+            ? materials.filter(m => String(m.userId) === String(currentUserId))
+            : [];
+        const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.points) || 0), 0);
+        document.getElementById('rewardPoints').innerText = totalPoints;
+        const percent = Math.min(100, (totalPoints / 1000) * 100);
+        document.getElementById('milestoneBar').style.width = percent + '%';
+        document.getElementById('milestoneText').innerText = totalPoints + '/1000';
+    }
+
+    function renderOverview() {
+        const userMaterials = currentUserId 
+            ? materials.filter(m => String(m.userId) === String(currentUserId))
+            : [];
+        const totalMaterials = userMaterials.length;
+        const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.points) || 0), 0);
+        const totalGrams = userMaterials.reduce((acc, m) => acc + (Number(m.weight) || 0), 0);
+
+        document.getElementById('overviewTotalMaterials').innerText = totalMaterials;
+        document.getElementById('overviewTotalPoints').innerText = totalPoints;
+
+        const lang = getCurrentLang();
+        const impactTemplate = translations[lang]?.impact_message || translations.en.impact_message;
+        document.getElementById('impactText').innerHTML = impactTemplate.replace('{grams}', totalGrams);
+
+        const recent = [...userMaterials].reverse().slice(0, 3);
+        const container = document.getElementById('recentUploads');
+        container.innerHTML = '';
+        recent.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'material-card';
+            card.innerHTML = `
+                <i class="fas fa-trash delete-icon" data-id="${m.id}"></i>
+                <img src="${m.imageBase64 || 'https://via.placeholder.com/150?text=recycle'}" alt="material">
+                <p><strong>${m.name}</strong> ${m.weight}g</p>
+                <small>${new Date(m.date).toLocaleDateString()}</small>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function renderMyMaterials() {
+        const container = document.getElementById('materialsList');
+        container.innerHTML = '';
+
+        const userMaterials = currentUserId 
+            ? materials.filter(m => String(m.userId) === String(currentUserId))
+            : [];
+
+        if (userMaterials.length === 0) {
+            const lang = getCurrentLang();
+            const msg = translations[lang]?.no_materials || translations.en.no_materials;
+            container.innerHTML = `<p class="stat-card">${msg}</p>`;
+            return;
+        }
+
+        userMaterials.slice().reverse().forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'material-card';
+            card.innerHTML = `
+                <i class="fas fa-trash delete-icon" data-id="${m.id}"></i>
+                <img src="${m.imageBase64 || 'https://via.placeholder.com/150?text=BEKYA'}" alt="img">
+                <div class="flex-between"><span>${m.name}</span><span class="badge">${m.weight}g</span></div>
+                <div class="flex-between"><span>⭐ ${m.points} pts</span><small>${new Date(m.date).toLocaleDateString()}</small></div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function renderStatistics() {
+        const userMaterials = currentUserId 
+            ? materials.filter(m => String(m.userId) === String(currentUserId))
+            : [];
+
+        const totalGrams  = userMaterials.reduce((acc, m) => acc + (Number(m.weight)  || 0), 0);
+        const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.points) || 0), 0);
+        const uploads = userMaterials.length;
+
+        document.getElementById('statTotalGrams').innerText = totalGrams;
+        document.getElementById('statTotalPoints').innerText = totalPoints;
+        document.getElementById('statUploads').innerText = uploads;
+
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+        const last24 = userMaterials.filter(m => (now - new Date(m.date).getTime()) <= oneDay)
+                                   .reduce((acc, m) => acc + (Number(m.weight) || 0), 0);
+        const prev24 = userMaterials.filter(m => {
+            const diff = now - new Date(m.date).getTime();
+            return diff > oneDay && diff <= 2 * oneDay;
+        }).reduce((acc, m) => acc + (Number(m.weight) || 0), 0);
+
+        let increase = 0;
+        if (prev24 > 0) increase = ((last24 - prev24) / prev24) * 100;
+        else if (last24 > 0) increase = 100;
+
+        document.getElementById('hourlyIncrease').innerText = (increase > 0 ? '+' : '') + increase.toFixed(1) + '%';
+        document.getElementById('increaseBar').style.width = Math.min(100, Math.abs(increase)) + '%';
+
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        const types = [...new Set(userMaterials.map(m => m.name))];
+        const pointsByType = types.map(t => 
+            userMaterials.filter(m => m.name === t).reduce((acc, m) => acc + (Number(m.points) || 0), 0)
+        );
+
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: types,
+                datasets: [{
+                    data: pointsByType,
+                    backgroundColor: ['#0A3D2A', '#2f8e6b', '#6abf8a', '#a3d9b1'],
+                    borderWidth: 0
+                }]
+            },
+            options: { 
+                plugins: { 
+                    legend: { 
+                        labels: { color: getComputedStyle(document.body).getPropertyValue('--text-primary') } 
+                    } 
+                } 
+            }
+        });
+    }
+
+    // ────────────────────────────────────────────────
+    //               ADD MATERIAL
+    // ────────────────────────────────────────────────
+    document.getElementById('addMaterialBtn').addEventListener('click', function() {
+        const name = document.getElementById('materialName').value.trim();
+        const weight = parseFloat(document.getElementById('materialWeight').value);
+
+        if (!name) return alert('أدخل اسم المادة من فضلك');
+        if (!weight || weight <= 0) return alert('أدخل وزن صحيح (أكبر من 0)');
+
+        const fileInput = document.getElementById('materialImage');
+        const file = fileInput.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                addMaterialToStore(name, weight, e.target.result);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            addMaterialToStore(name, weight, null);
+        }
+    });
+
+    function addMaterialToStore(name, weight, imageBase64) {
+        const newMaterial = {
+            id: Date.now() + Math.random(),
+            name,
+            weight,
+            points: weight,  // ← يمكنك تغيير طريقة حساب النقاط هنا لاحقًا
+            date: new Date().toISOString(),
+            imageBase64: imageBase64 || null,
+            userId: currentUserId || null,   // number أو null
+            userName: localStorage.getItem('userName') || 'Unknown' // Add userName for Admin
+        };
+
+        materials.push(newMaterial);
+        saveMaterials();
+
+        document.getElementById('materialName').value = '';
+        document.getElementById('materialWeight').value = '';
+        document.getElementById('materialImage').value = '';
+        switchSection('myMaterials');
+    }
+
+    // ────────────────────────────────────────────────
+    //               SIDEBAR NAVIGATION
+    // ────────────────────────────────────────────────
+    const menuItems = document.querySelectorAll('.menu-item');
+    const sections = document.querySelectorAll('.section');
+
+    function switchSection(sectionId) {
+        sections.forEach(s => s.classList.remove('active-section'));
+        document.getElementById(sectionId).classList.add('active-section');
+
+        menuItems.forEach(item => item.classList.remove('active'));
+        document.querySelector(`.menu-item[data-section="${sectionId}"]`)?.classList.add('active');
+
+        if (sectionId === 'statistics' && chartInstance) renderStatistics();
+    }
+
+    menuItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            const section = item.getAttribute('data-section');
+            if (section) switchSection(section);
+        });
+    });
+
+    // ────────────────────────────────────────────────
+    //               THEME & LANGUAGE
+    // ────────────────────────────────────────────────
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const body = document.body;
+
+    function setTheme(theme) {
+        if (theme === 'dark') {
+            body.classList.add('dark');
+            themeIcon.className = 'fas fa-moon';
+        } else {
+            body.classList.remove('dark');
+            themeIcon.className = 'fas fa-sun';
+        }
+        localStorage.setItem('bekyaTheme', theme);
+        if (chartInstance) renderStatistics();
+    }
+
+    themeToggle.addEventListener('click', () => {
+        const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+        setTheme(newTheme);
+    });
+
+    const savedTheme = localStorage.getItem('bekyaTheme') || 'light';
+    setTheme(savedTheme);
+
+    const langToggle = document.getElementById('langToggle');
+
+    function setLanguage(lang) {
+        if (lang === 'ar') {
+            document.body.dir = 'rtl';
+            localStorage.setItem('bekyaLang', 'ar');
+        } else {
+            document.body.dir = 'ltr';
+            localStorage.setItem('bekyaLang', 'en');
+        }
+        applyTranslations(lang);
+        renderAllSections();
+        if (chartInstance) renderStatistics();
+    }
+
+    langToggle.addEventListener('click', () => {
+        const currentDir = document.body.dir || 'ltr';
+        const newLang = currentDir === 'ltr' ? 'ar' : 'en';
+        setLanguage(newLang);
+    });
+
+    const savedLang = localStorage.getItem('bekyaLang') || 'en';
+    setLanguage(savedLang);
+
+    // ────────────────────────────────────────────────
+    //               DELETE MATERIAL
+    // ────────────────────────────────────────────────
+    function deleteMaterial(id) {
+        const index = materials.findIndex(m => m.id.toString() === id.toString());
+        if (index === -1) return;
+        materials.splice(index, 1);
+        saveMaterials();
+        deleteFromIndexedDB(id);
+    }
+
+    function deleteFromIndexedDB(id) {
+        const request = indexedDB.open('bekyaDB', 1);
+        request.onsuccess = function(event) {
+            const db = event.target.result;
+            if (db.objectStoreNames.contains('materials')) {
+                const tx = db.transaction('materials', 'readwrite');
+                const store = tx.objectStore('materials');
+                store.delete(Number(id));
+            }
+            db.close();
+        };
+        request.onerror = function() {};
+    }
+
+    document.getElementById('materialsList').addEventListener('click', function(e) {
+        const deleteIcon = e.target.closest('.delete-icon');
+        if (deleteIcon) {
+            e.preventDefault();
+            deleteMaterial(deleteIcon.dataset.id);
+        }
+    });
+
+    document.getElementById('recentUploads').addEventListener('click', function(e) {
+        const deleteIcon = e.target.closest('.delete-icon');
+        if (deleteIcon) {
+            e.preventDefault();
+            deleteMaterial(deleteIcon.dataset.id);
+        }
+    });
+
+    // ────────────────────────────────────────────────
+    //               SIDEBAR TOGGLE
+    // ────────────────────────────────────────────────
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function toggleSidebar() {
+        if (window.innerWidth <= 1024) {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+            // Remove desktop collapsed class if it exists
+            sidebar.classList.remove('collapsed');
+        } else {
+            sidebar.classList.toggle('collapsed');
+            // Remove mobile active class if it exists
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+        }
+    }
+
+    sidebarToggle.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', toggleSidebar);
+
+    // Close sidebar on menu item click (mobile)
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 1024 && sidebar.classList.contains('active')) {
+                toggleSidebar();
+            }
+        });
+    });
+
+    // ────────────────────────────────────────────────
+    //               LOGOUT
+    // ────────────────────────────────────────────────
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        const lang = getCurrentLang();
+        const confirmMsg = lang === 'ar' ? 'هل أنت متأكد من تسجيل الخروج؟' : 'Are you sure you want to logout?';
+        if (confirm(confirmMsg)) {
+            localStorage.removeItem('currentUserId');
+            window.location.href = 'login.html';
+        }
+    });
+
+    // ────────────────────────────────────────────────
+     //               PROFILE EDITING
+     // ────────────────────────────────────────────────
+     const editProfileBtn = document.getElementById('editProfileBtn');
+     const profileInfo = document.getElementById('profileInfo');
+     const profileEditForm = document.getElementById('profileEditForm');
+     const saveProfileBtn = document.getElementById('saveProfileBtn');
+     const cancelEditBtn = document.getElementById('cancelEditBtn');
+ 
+     function enterEditMode() {
+         profileInfo.classList.add('hidden');
+         profileEditForm.classList.add('active');
+         document.getElementById('editName').value = localStorage.getItem('userName') || '';
+         document.getElementById('editPhone').value = localStorage.getItem('userPhone') || '';
+         switchSection('profile');
+     }
+ 
+     editProfileBtn.addEventListener('click', enterEditMode);
+
+    cancelEditBtn.addEventListener('click', () => {
+        profileInfo.classList.remove('hidden');
+        profileEditForm.classList.remove('active');
+    });
+
+    saveProfileBtn.addEventListener('click', () => {
+        const newName = document.getElementById('editName').value.trim();
+        const newPhone = document.getElementById('editPhone').value.trim();
+        const lang = getCurrentLang();
+
+        if (!newName || !newPhone) {
+            alert(lang === 'ar' ? 'يرجى ملء جميع الحقول' : 'Please fill all fields');
+            return;
+        }
+
+        localStorage.setItem('userName', newName);
+        localStorage.setItem('userPhone', newPhone);
+
+        // Update in global users list
+        let users = JSON.parse(localStorage.getItem('users') || '[]');
+        const currentUserId = localStorage.getItem('currentUserId');
+        const userIndex = users.findIndex(u => String(u.id) === String(currentUserId) || u.username === localStorage.getItem('userName'));
+        
+        if (userIndex > -1) {
+            users[userIndex].username = newName;
+            users[userIndex].phone = newPhone;
+            localStorage.setItem('users', JSON.stringify(users));
+        }
+        
+        renderProfile();
+        profileInfo.classList.remove('hidden');
+        profileEditForm.classList.remove('active');
+        alert(lang === 'ar' ? 'تم تحديث الملف الشخصي بنجاح!' : 'Profile updated successfully!');
+    });
+
+    // ────────────────────────────────────────────────
+    //               INIT
+    // ────────────────────────────────────────────────
+    renderAllSections();
+    switchSection('overview');
+})();
+</script>
+</body>
+</html>
+
