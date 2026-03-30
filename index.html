@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BEKYA · circular recycling</title>
+  <!-- Font Awesome (for icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* ---------- RESET & GLOBAL ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background-color: #ffffff;
+      color: #0f3d2e;
+      line-height: 1.5;
+      transition: background-color 0.3s, color 0.3s;
+      padding-bottom: 100px; /* space for fixed toggles */
+    }
+
+    /* Dark mode variables */
+    body.dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .header {
+      background-color: #1e1e1e;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    body.dark-mode .btn {
+      border-color: #e0e0e0;
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .btn-primary {
+      background: #2e7d5e;
+      border-color: #2e7d5e;
+      color: #ffffff;
+    }
+
+    body.dark-mode .btn-outline:hover {
+      background: #e0e0e0;
+      color: #121212;
+    }
+
+    body.dark-mode .footer {
+      border-top-color: rgba(255,255,255,0.1);
+      color: #aaa;
+    }
+
+    body.dark-mode .bottom-toggles {
+      background: rgba(30, 30, 30, 0.8);
+      border-color: rgba(255,255,255,0.15);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    }
+
+    /* ---------- FIXED HEADER ---------- */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: #ffffff;
+      box-shadow: 0 4px 12px rgba(15, 61, 46, 0.08);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .logo-img {
+      height: 45px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .logo-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: inherit;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.6rem 1.8rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1.5px solid #0f3d2e;
+      background: transparent;
+      color: #0f3d2e;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #0f3d2e;
+      color: #ffffff;
+      border: 1.5px solid #0f3d2e;
+    }
+
+    .btn-primary:hover {
+      background: #0f3d2e;
+      transform: scale(1.02);
+      box-shadow: 0 4px 8px rgba(15, 61, 46, 0.15);
+    }
+
+    .btn-outline:hover {
+      background: #0f3d2e;
+      color: #ffffff;
+    }
+
+    /* ---------- FIXED BOTTOM TOGGLES ---------- */
+    .bottom-toggles {
+      position: fixed;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 1.2rem;
+      padding: 0.6rem 1.2rem;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 60px;
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      z-index: 1000;
+    }
+
+    .toggle-btn {
+      padding: 0.6rem 1.2rem;
+      font-size: 1.5rem;          /* larger for icons */
+      border-radius: 40px;
+      border: 1.5px solid transparent;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      transition: 0.2s;
+      min-width: 60px;             /* smaller, just for icons */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toggle-btn:hover {
+      background: rgba(15, 61, 46, 0.1);
+    }
+
+    body.dark-mode .toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* ---------- MAIN CONTENT ---------- */
+    .main {
+      padding-top: 90px;
+    }
+
+    /* ---------- HERO SECTION ---------- */
+    .hero {
+      text-align: center;
+      max-width: 900px;
+      margin: 5rem auto 4rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 10vw, 5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: inherit;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero p {
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      font-weight: 350;
+      color: inherit;
+      opacity: 0.85;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .divider {
+      width: 120px;
+      height: 3px;
+      background: currentColor;
+      margin: 2rem auto;
+      opacity: 0.2;
+    }
+
+    /* ---------- SLIDER SECTION ---------- */
+    .slider-section {
+      max-width: 1400px;
+      margin: 2rem auto 4rem auto;
+      padding: 0 1rem;
+    }
+
+    .slider-container {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 24px;
+      box-shadow: 0 20px 30px -10px rgba(15, 61, 46, 0.2);
+      position: relative;
+      background-color: #0f3d2e;
+    }
+
+    .slider-track {
+      display: flex;
+      transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      will-change: transform;
+      direction: ltr;
+    }
+
+    .slide {
+      flex: 0 0 100%;
+      height: clamp(300px, 50vw, 500px);
+      position: relative;
+      background-color: #1f5c42;
+    }
+
+    .slide-blur-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      filter: blur(10px);
+      transform: scale(1.1);
+      z-index: 0;
+    }
+
+    .slide-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      position: relative;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .slide-blur-left,
+    .slide-blur-right {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 0;
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      pointer-events: none;
+      z-index: 2;
+      transition: width 0.2s ease;
+    }
+
+    .slide-blur-left {
+      left: 0;
+    }
+
+    .slide-blur-right {
+      right: 0;
+    }
+
+    html[dir="rtl"] .slide-blur-left {
+      left: auto;
+      right: 0;
+    }
+    html[dir="rtl"] .slide-blur-right {
+      right: auto;
+      left: 0;
+    }
+    html[dir="rtl"] .nav-buttons {
+      flex-direction: row-reverse;
+    }
+
+    /* ---------- ABOUT SECTION ---------- */
+    .about-section {
+      max-width: 1000px;
+      margin: 6rem auto;
+      padding: 0 2rem;
+      text-align: center;
+    }
+
+    .about-section h2 {
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: inherit;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .about-card {
+      background: rgba(15, 61, 46, 0.05);
+      border-radius: 24px;
+      padding: 2rem 1.5rem;
+      transition: transform 0.2s;
+    }
+
+    body.dark-mode .about-card {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .about-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .about-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: inherit;
+    }
+
+    .about-card p {
+      font-size: 1rem;
+      opacity: 0.8;
+      color: inherit;
+    }
+
+    /* ---------- FOOTER ---------- */
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      color: inherit;
+      opacity: 0.6;
+      font-size: 0.9rem;
+      border-top: 1px solid rgba(15,61,46,0.1);
+      margin-top: 2rem;
+      transition: border-color 0.3s;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      .header {
+        padding: 0.8rem 1.2rem;
+      }
+      .logo {
+        font-size: 1.5rem;
+      }
+      .btn {
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+      }
+      .about-section h2 {
+        font-size: 2rem;
+      }
+      .bottom-toggles {
+        gap: 0.8rem;
+        padding: 0.4rem 1rem;
+      }
+      .toggle-btn {
+        font-size: 1.2rem;
+        min-width: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- FIXED HEADER (toggles removed) -->
+  <header class="header">
+    <a href="index.html" class="logo-wrapper">
+      <img src="logo.png" alt="BEKYA Logo" class="logo-img">
+      <span class="logo" data-i18n="logo">BEKYA</span>
+    </a>
+    <div class="nav-buttons">
+      <!-- Only login/register remain -->
+      <a href="login.html" class="btn btn-outline" data-i18n="login">Login</a>
+      <a href="FORM-BEKYA.html" class="btn btn-primary" data-i18n="register">Register</a>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <h1 data-i18n="heroTitle">Green Points, Clean Planet</h1>
+      <p data-i18n="heroSub">Recycle smart, earn rewards, save planet.</p>
+      <div class="divider"></div>
+    </section>
+
+    <!-- IMAGE SLIDER SECTION -->
+    <section class="slider-section">
+      <div class="slider-container" id="sliderContainer">
+        <div class="slider-track" id="sliderTrack"></div>
+      </div>
+    </section>
+
+    <!-- ABOUT SECTION -->
+    <section class="about-section">
+      <h2 data-i18n="aboutTitle">About Bekya</h2>
+      <div class="about-grid">
+        <div class="about-card">
+          <h3 data-i18n="about1Title">Exchange for points</h3>
+          <p data-i18n="about1Text">Turn recyclables into points you can use at local partners.</p>
+        </div>
+        <div class="about-card">
+          <h3 data-i18n="about2Title">Sustainability</h3>
+          <p data-i18n="about2Text">We help close the loop by connecting sellers with recycling outlets.</p>
+        </div>
+        <div class="about-card">
+          <h3 data-i18n="about3Title">Community driven</h3>
+          <p data-i18n="about3Text">Join a growing network of eco‑conscious individuals and businesses.</p>
+        </div>
+        <div class="about-card">
+          <h3 data-i18n="about4Title">Easy & smart</h3>
+          <p data-i18n="about4Text">Simple process, real impact. Track your contributions and rewards.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" data-i18n="footer">BEKYA — close the loop</footer>
+
+  <!-- FIXED BOTTOM TOGGLES with icons -->
+  <div class="bottom-toggles">
+    <button class="toggle-btn" id="themeToggle"><i class="fas fa-sun"></i></button>   <!-- initial, will be updated by JS -->
+    <button class="toggle-btn" id="langToggle"><i class="fas fa-language"></i></button>
+  </div>
+
+  <script>
+    (function() {
+      // ==================== CONFIG ====================
+      const imageNames = [
+        'pic1.png',
+        'pic2.png',
+        'pic3.png',
+        'pic4.png',
+        'pic5.png',
+        'pic6.png'
+      ];
+      const basePath = 'assets/images/';   // folder as specified
+
+      // ==================== SLIDER ELEMENTS ====================
+      const track = document.getElementById('sliderTrack');
+      const container = document.getElementById('sliderContainer');
+
+      let currentIndex = 0;
+      let realSlideCount = imageNames.length;
+      let totalSlides = realSlideCount + 1; // + duplicate of first
+      let slides = [];
+      let autoInterval = null;
+      let imageAspects = []; // store natural width/height ratio
+
+      // ==================== BUILD SLIDES ====================
+      function buildSlides() {
+        track.innerHTML = '';
+
+        imageNames.forEach((name, idx) => {
+          const slideDiv = document.createElement('div');
+          slideDiv.className = 'slide';
+
+          // blurred background layer
+          const blurBg = document.createElement('div');
+          blurBg.className = 'slide-blur-bg';
+          blurBg.style.backgroundImage = `url('${name}')`;
+          slideDiv.appendChild(blurBg);
+
+          // sharp image
+          const img = document.createElement('img');
+          img.className = 'slide-img';
+          img.src = name;
+          img.alt = `Slide ${idx+1}`;
+          slideDiv.appendChild(img);
+
+          // left and right glass-blur overlays
+          const leftBlur = document.createElement('div');
+          leftBlur.className = 'slide-blur-left';
+          const rightBlur = document.createElement('div');
+          rightBlur.className = 'slide-blur-right';
+          slideDiv.appendChild(leftBlur);
+          slideDiv.appendChild(rightBlur);
+
+          track.appendChild(slideDiv);
+          slides.push(slideDiv);
+        });
+
+        // duplicate first slide for seamless loop
+        const firstClone = slides[0].cloneNode(true);
+        track.appendChild(firstClone);
+        slides.push(firstClone);
+        totalSlides = slides.length;
+
+        // Load image natural dimensions for aspect ratios
+        loadImageAspects();
+      }
+
+      // Load image natural sizes
+      function loadImageAspects() {
+        let loaded = 0;
+        imageNames.forEach((name, i) => {
+          const img = new Image();
+          img.src = name;
+          img.onload = function() {
+            imageAspects[i] = img.naturalWidth / img.naturalHeight;
+            loaded++;
+            if (loaded === imageNames.length) {
+              updateBlurOverlays(); // initial update after all images loaded
+            }
+          };
+          // fallback if image fails: assume square (ratio 1)
+          img.onerror = function() {
+            imageAspects[i] = 1;
+            loaded++;
+            if (loaded === imageNames.length) updateBlurOverlays();
+          };
+        });
+      }
+
+      // Calculate and set blur overlay widths based on contain
+      function updateBlurOverlays() {
+        if (!container || slides.length === 0 || imageAspects.length === 0) return;
+        const containerWidth = container.offsetWidth;
+        const containerHeight = slides[0].offsetHeight; // all slides same height
+        if (containerHeight === 0) return;
+
+        const containerAspect = containerWidth / containerHeight;
+
+        slides.forEach((slide, idx) => {
+          // Determine which real image this slide corresponds to
+          let imgIdx = idx;
+          if (idx >= realSlideCount) imgIdx = 0; // duplicate uses first image
+          const aspect = imageAspects[imgIdx] || 1;
+
+          let imageWidth, imageHeight;
+          if (aspect > containerAspect) {
+            // image wider than container -> width = container width, height = containerWidth / aspect
+            imageWidth = containerWidth;
+            imageHeight = containerWidth / aspect;
+          } else {
+            // image taller or equal -> height = container height, width = containerHeight * aspect
+            imageHeight = containerHeight;
+            imageWidth = containerHeight * aspect;
+          }
+
+          // empty space on sides
+          const emptySpace = (containerWidth - imageWidth) / 2;
+          if (emptySpace > 0) {
+            const leftBlur = slide.querySelector('.slide-blur-left');
+            const rightBlur = slide.querySelector('.slide-blur-right');
+            if (leftBlur && rightBlur) {
+              leftBlur.style.width = emptySpace + 'px';
+              rightBlur.style.width = emptySpace + 'px';
+            }
+          } else {
+            // no empty space (image fills exactly or wider) -> set width 0
+            const leftBlur = slide.querySelector('.slide-blur-left');
+            const rightBlur = slide.querySelector('.slide-blur-right');
+            if (leftBlur && rightBlur) {
+              leftBlur.style.width = '0px';
+              rightBlur.style.width = '0px';
+            }
+          }
+        });
+      }
+
+      // ==================== SLIDER NAVIGATION ====================
+      function goToSlide(index, useTransition = true) {
+        if (index < 0) index = 0;
+        if (index >= totalSlides) index = totalSlides - 1;
+
+        track.style.transition = useTransition ? '' : 'none';
+        track.style.transform = `translateX(-${index * 100}%)`;
+        currentIndex = index;
+
+        if (useTransition && index === totalSlides - 1) {
+          const resetToFirst = function(e) {
+            if (e.target !== track) return;
+            track.removeEventListener('transitionend', resetToFirst);
+            goToSlide(0, false);
+          };
+          track.addEventListener('transitionend', resetToFirst);
+        }
+
+        if (!useTransition) {
+          void track.offsetHeight; // force reflow
+          track.style.transition = '';
+        }
+      }
+
+      function nextSlide() {
+        if (currentIndex === totalSlides - 1) {
+          goToSlide(0, false);
+        } else {
+          goToSlide(currentIndex + 1, true);
+        }
+      }
+
+      function startAutoSlide() {
+        if (autoInterval) clearInterval(autoInterval);
+        autoInterval = setInterval(nextSlide, 3000);
+      }
+
+      function stopAutoSlide() {
+        if (autoInterval) {
+          clearInterval(autoInterval);
+          autoInterval = null;
+        }
+      }
+
+      // ==================== RESIZE HANDLER ====================
+      let resizeTimer;
+      window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          updateBlurOverlays(); // recalculate blur widths
+          // ensure correct slide position
+          track.style.transition = 'none';
+          track.style.transform = `translateX(-${currentIndex * 100}%)`;
+          void track.offsetHeight;
+          track.style.transition = '';
+        }, 100);
+      });
+
+      // ==================== THEME MANAGEMENT ====================
+      const themeToggle = document.getElementById('themeToggle');
+      const langToggle = document.getElementById('langToggle');
+      const body = document.body;
+
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          body.classList.add('dark-mode');
+          themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        } else {
+          body.classList.remove('dark-mode');
+          themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+        localStorage.setItem('theme', theme);
+      }
+
+      themeToggle.addEventListener('click', () => {
+        const newTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
+        applyTheme(newTheme);
+      });
+
+      // ==================== LANGUAGE MANAGEMENT ====================
+      const htmlElem = document.documentElement;
+
+      const translations = {
+        en: {
+          logo: 'BEKYA',
+          login: 'Login',
+          register: 'Register',
+          heroTitle: 'Green Points, Clean Planet',
+          heroSub: 'Recycle smart, earn rewards, save planet.',
+          aboutTitle: 'About Bekya',
+          about1Title: 'Exchange for points',
+          about1Text: 'Turn recyclables into points you can use at local partners.',
+          about2Title: 'Sustainability',
+          about2Text: 'We help close the loop by connecting sellers with recycling outlets.',
+          about3Title: 'Community driven',
+          about3Text: 'Join a growing network of eco‑conscious individuals and businesses.',
+          about4Title: 'Easy & smart',
+          about4Text: 'Simple process, real impact. Track your contributions and rewards.',
+          footer: 'BEKYA — close the loop'
+        },
+        ar: {
+          logo: 'بيكيا',
+          login: 'تسجيل الدخول',
+          register: 'إنشاء حساب',
+          heroTitle: 'نقاط بيئية لكوكب أنظف.',
+          heroSub: 'أعد التدوير بذكاء، واكسب النقاط، وأنقذ الكوكب',
+          aboutTitle: 'عن بيكيا',
+          about1Title: 'استبدل بالنقاط',
+          about1Text: 'حوِّل المواد القابلة للتدوير إلى نقاط يمكنك استخدامها لدى الشركاء المحليين.',
+          about2Title: 'الاستدامة',
+          about2Text: 'نساعد في إغلاق الحلقة من خلال ربط البائعين بمنافذ إعادة التدوير.',
+          about3Title: 'مجتمع داعم',
+          about3Text: 'انضم إلى شبكة متنامية من الأفراد والشركات المهتمة بالبيئة.',
+          about4Title: 'سهل وذكي',
+          about4Text: 'عملية بسيطة، تأثير حقيقي. تابع مساهماتك ومكافآتك.',
+          footer: 'بيكيا — أكمل الحلقة'
+        }
+      };
+
+      function applyLanguage(lang) {
+        const elements = document.querySelectorAll('[data-i18n]');
+        elements.forEach(el => {
+          const key = el.getAttribute('data-i18n');
+          if (translations[lang] && translations[lang][key]) {
+            el.textContent = translations[lang][key];
+          }
+        });
+
+        // Theme toggle icon is already correct, no need to change it based on language.
+        // Language toggle icon is static, so nothing to update.
+
+        htmlElem.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        localStorage.setItem('language', lang);
+      }
+
+      langToggle.addEventListener('click', () => {
+        const currentLang = localStorage.getItem('language') || 'en';
+        const newLang = currentLang === 'en' ? 'ar' : 'en';
+        applyLanguage(newLang);
+      });
+
+      // ==================== LOAD STORED PREFERENCES ====================
+      function loadStoredPreferences() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+          applyTheme(savedTheme);
+        } else {
+          applyTheme('light'); // default
+        }
+
+        const savedLang = localStorage.getItem('language');
+        if (savedLang) {
+          applyLanguage(savedLang);
+        } else {
+          applyLanguage('en'); // default
+        }
+      }
+
+      // ==================== INIT ====================
+      window.addEventListener('DOMContentLoaded', function() {
+        buildSlides();
+        goToSlide(0, false);
+        startAutoSlide();
+
+        container.addEventListener('mouseenter', stopAutoSlide);
+        container.addEventListener('mouseleave', startAutoSlide);
+
+        loadStoredPreferences();
+
+        // Initial blur update after a short delay (ensures container dimensions)
+        setTimeout(updateBlurOverlays, 150);
+      });
+
+      window.addEventListener('beforeunload', function() {
+        if (autoInterval) clearInterval(autoInterval);
+      });
+    })();
+  </script>
+</body>
+</html>
+
+
+
+
+
