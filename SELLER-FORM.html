@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>BEKYA · seller dashboard</title>
+    <title>BEKYA · seller dashboard + recycling map</title>
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Leaflet CSS + JS for map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        /* (existing styles – unchanged) */
         * {
             margin: 0;
             padding: 0;
@@ -35,7 +37,6 @@
             transition: background-color 0.3s ease, color 0.2s ease;
         }
 
-        /* dark mode class */
         body.dark {
             --bg-primary: #0f172a;
             --bg-secondary: #1e293b;
@@ -60,7 +61,6 @@
             flex-direction: column;
         }
 
-        /* layout */
         .app-wrapper {
             max-width: 1600px;
             margin: 0 auto;
@@ -68,7 +68,6 @@
             width: 100%;
         }
 
-        /* ----- HEADER (logo & toggle) ----- */
         .header {
             display: flex;
             justify-content: space-between;
@@ -76,7 +75,7 @@
             margin-bottom: 2rem;
             position: sticky;
             top: 0;
-            z-index: 990; /* Lower than sidebar */
+            z-index: 990;
             background: var(--bg-primary);
             padding: 0.8rem 0;
             width: 100%;
@@ -158,7 +157,6 @@
             border-color: var(--accent-green);
         }
 
-        /* ----- DASHBOARD LAYOUT ----- */
         .dashboard-container {
             display: flex;
             gap: 2rem;
@@ -166,7 +164,6 @@
             position: relative;
         }
 
-        /* SIDEBAR */
         .sidebar {
             flex: 0 0 240px;
             background: var(--surface);
@@ -181,7 +178,6 @@
             z-index: 100;
         }
 
-        /* Sidebar Toggle State (Desktop) */
         .sidebar.collapsed {
             transform: translateX(-120%);
             margin-left: -240px;
@@ -247,7 +243,6 @@
             color: #dc2626;
         }
 
-        /* MAIN CONTENT */
         .main-content {
             flex: 1;
             background: var(--surface);
@@ -370,11 +365,6 @@
             font-size: 1rem;
         }
 
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent-green);
-        }
-
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -392,11 +382,6 @@
             border: 1px solid var(--border-light);
             transition: all 0.2s;
             position: relative;
-        }
-
-        .material-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--hover-glow);
         }
 
         .material-card img {
@@ -429,11 +414,6 @@
         .delete-icon:hover {
             background: #fee2e2;
             transform: scale(1.1);
-        }
-
-        body.dark .delete-icon {
-            background: #2d3f42;
-            color: #f87171;
         }
 
         .flex-between {
@@ -487,6 +467,44 @@
             display: none;
         }
 
+        /* MAP specific styles */
+        .map-container {
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid var(--border-light);
+            margin-bottom: 1.5rem;
+            height: 480px;
+            width: 100%;
+        }
+        #recyclingMap {
+            height: 100%;
+            width: 100%;
+            background: var(--bg-secondary);
+        }
+        .outlet-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 0.2rem;
+        }
+        .outlet-card {
+            background: var(--bg-secondary);
+            border-radius: 18px;
+            padding: 1rem;
+            border-left: 5px solid var(--accent-green);
+            transition: all 0.2s;
+        }
+        .outlet-card h4 {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+        .outlet-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
         @media (max-width: 1024px) {
             .sidebar {
                 position: fixed;
@@ -506,13 +524,12 @@
                 padding: 1.2rem;
             }
         }
-
         @media (max-width: 768px) {
             .card-grid {
                 grid-template-columns: 1fr;
             }
-            .logo {
-                font-size: 1.4rem;
+            .map-container {
+                height: 320px;
             }
         }
     </style>
@@ -525,7 +542,7 @@
                 <button id="sidebarToggle" class="menu-hamburger" aria-label="Toggle Sidebar">
                     <i class="fas fa-bars"></i>
                 </button>
-                <a href="index.html" class="logo-wrapper">
+                <a href="#" class="logo-wrapper">
                     <img src="logo.png" alt="Logo" class="logo-img" onerror="this.style.display='none'">
                     <div class="logo">BEKYA</div>
                 </a>
@@ -540,6 +557,7 @@
                     <button class="menu-item" data-section="myMaterials"><i class="fas fa-recycle"></i> <span>My Materials</span></button>
                     <button class="menu-item" data-section="statistics"><i class="fas fa-chart-line"></i> <span>Statistics</span></button>
                     <button class="menu-item" data-section="rewards"><i class="fas fa-gift"></i> <span>Rewards / Points</span></button>
+                    <button class="menu-item" data-section="map"><i class="fas fa-map-marked-alt"></i> <span>Recycling Map</span></button>
                     <button class="menu-item" data-section="profile"><i class="fas fa-user-circle"></i> <span>Profile</span></button>
                     <button class="menu-item" data-section="settings"><i class="fas fa-cog"></i> <span>Settings</span></button>
                     <button class="menu-item logout" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
@@ -547,510 +565,152 @@
             </aside>
 
             <main class="main-content">
+                <!-- existing sections: overview, addMaterial, myMaterials, statistics, rewards, profile, settings -->
                 <section id="overview" class="section active-section">
                     <h2>🌍 Overview</h2>
-                    <div class="card-grid">
-                        <div class="stat-card"><i class="fas fa-boxes"></i> Total materials <span class="stat-value" id="overviewTotalMaterials">0</span></div>
-                        <div class="stat-card"><i class="fas fa-coins"></i> Total points <span class="stat-value" id="overviewTotalPoints">0</span></div>
-                    </div>
+                    <div class="card-grid"><div class="stat-card"><i class="fas fa-boxes"></i> Total materials <span class="stat-value" id="overviewTotalMaterials">0</span></div>
+                    <div class="stat-card"><i class="fas fa-coins"></i> Total points <span class="stat-value" id="overviewTotalPoints">0</span></div></div>
                     <div class="impact-message" id="impactText">You helped recycle <strong>0g</strong> of materials. Keep saving the planet! 🌱</div>
                     <h3 style="margin-top:2rem;">Recent uploads</h3>
                     <div id="recentUploads" class="materials-grid" style="grid-template-columns:repeat(auto-fill, minmax(200px,1fr));"></div>
                 </section>
 
-                <section id="addMaterial" class="section">
-                    <h2>➕ Register material</h2>
-                    <form id="addMaterialForm">
-                        <div class="form-group">
-                            <label>Material type</label>
-                            <select id="materialNameSelect" required>
-                                <option value="Aluminum">Aluminum</option>
-                                <option value="Plastic">Plastic</option>
-                                <option value="Paper">Paper</option>
-                                <option value="Glass">Glass</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Weight (grams)</label>
-                            <input type="number" id="materialWeightInput" placeholder="e.g. 500" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Upload image</label>
-                            <input type="file" id="materialImageInput" accept="image/*">
-                        </div>
-                        <button type="submit" class="primary" id="addMaterialSubmitBtn"><i class="fas fa-save"></i> Add material</button>
-                    </form>
+                <section id="addMaterial" class="section"><h2>➕ Register material</h2>
+                    <form id="addMaterialForm"><div class="form-group"><label>Material type</label><select id="materialNameSelect" required><option value="Aluminum">Aluminum</option><option value="Plastic">Plastic</option><option value="Paper">Paper</option><option value="Glass">Glass</option></select></div>
+                    <div class="form-group"><label>Weight (grams)</label><input type="number" id="materialWeightInput" placeholder="e.g. 500" min="1" required></div>
+                    <div class="form-group"><label>Upload image</label><input type="file" id="materialImageInput" accept="image/*"></div>
+                    <button type="submit" class="primary"><i class="fas fa-save"></i> Add material</button></form>
                 </section>
 
-                <section id="myMaterials" class="section">
-                    <h2>📦 My materials</h2>
-                    <div id="materialsList" class="materials-grid"></div>
+                <section id="myMaterials" class="section"><h2>📦 My materials</h2><div id="materialsList" class="materials-grid"></div></section>
+
+                <section id="statistics" class="section"><h2>📊 Statistics</h2><div class="card-grid"><div class="stat-card">Total grams<span class="stat-value" id="statTotalGrams">0</span></div><div class="stat-card">Total points<span class="stat-value" id="statTotalPoints">0</span></div><div class="stat-card">Uploads<span class="stat-value" id="statUploads">0</span></div></div>
+                <div class="stat-card"><span>Hourly increase (last 24h vs previous)</span><div class="stat-value" id="hourlyIncrease">+0%</div><div class="progress"><div class="progress-bar" id="increaseBar" style="width:0%"></div></div></div>
+                <canvas id="statsChart"></canvas></section>
+
+                <section id="rewards" class="section"><h2>🏆 Rewards</h2><div class="stat-card"><i class="fas fa-star"></i> Total points: <span id="rewardPoints">0</span></div>
+                <div class="stat-card"><span>Next milestone: 1000 pts</span><div class="progress"><div class="progress-bar" id="milestoneBar" style="width:0%"></div></div><p id="milestoneText">0/1000</p></div>
+                <div class="badge">♻️ 500 pts = Bronze, 1000 pts = Silver, 5000 = Gold</div></section>
+
+                <!-- NEW MAP SECTION -->
+                <section id="map" class="section">
+                    <h2>🗺️ Recycling outlets – official collection points</h2>
+                    <div class="map-container" id="mapContainer">
+                        <div id="recyclingMap"></div>
+                    </div>
+                    <div class="flex-between" style="margin-bottom: 1rem;">
+                        <h3>📍 Government & licensed centers (Cairo, Alex, Delta, Upper Egypt)</h3>
+                    </div>
+                    <div id="outletListContainer" class="outlet-list"></div>
                 </section>
 
-                <section id="statistics" class="section">
-                    <h2>📊 Statistics</h2>
-                    <div class="card-grid">
-                        <div class="stat-card">Total grams<span class="stat-value" id="statTotalGrams">0</span></div>
-                        <div class="stat-card">Total points<span class="stat-value" id="statTotalPoints">0</span></div>
-                        <div class="stat-card">Uploads<span class="stat-value" id="statUploads">0</span></div>
-                    </div>
-                    <div class="stat-card">
-                        <span>Hourly increase (last 24h vs previous)</span>
-                        <div class="stat-value" id="hourlyIncrease">+0%</div>
-                        <div class="progress"><div class="progress-bar" id="increaseBar" style="width:0%"></div></div>
-                    </div>
-                    <canvas id="statsChart"></canvas>
-                </section>
+                <section id="profile" class="section"><div class="flex-between"><h2>👤 Seller profile</h2><button class="primary" id="editProfileBtn" style="padding: 0.5rem 1.2rem;"><i class="fas fa-edit"></i> Edit</button></div>
+                <div id="profileInfo" class="profile-info"><div class="stat-card"><p><i class="fas fa-user"></i> <strong>Name:</strong> <span id="profileName"></span></p><p><i class="fas fa-phone"></i> <strong>Phone:</strong> <span id="profilePhone"></span></p><p><i class="fas fa-id-badge"></i> <strong>Role:</strong> Seller</p></div></div>
+                <div id="profileEditForm" class="profile-edit-form"><div class="stat-card"><div class="form-group"><label>Name:</label><input type="text" id="editName"></div><div class="form-group"><label>Phone:</label><input type="text" id="editPhone"></div><div style="display: flex; gap: 1rem;"><button class="primary" id="saveProfileBtn">Save Changes</button><button class="secondary" id="cancelEditBtn">Cancel</button></div></div></div></section>
 
-                <section id="rewards" class="section">
-                    <h2>🏆 Rewards</h2>
-                    <div class="stat-card">
-                        <i class="fas fa-star"></i> Total points: <span id="rewardPoints">0</span>
-                    </div>
-                    <div class="stat-card">
-                        <span>Next milestone: 1000 pts</span>
-                        <div class="progress"><div class="progress-bar" id="milestoneBar" style="width:0%"></div></div>
-                        <p id="milestoneText">0/1000</p>
-                    </div>
-                    <div class="badge">♻️ 500 pts = Bronze, 1000 pts = Silver, 5000 = Gold</div>
-                </section>
-
-                <section id="profile" class="section">
-                    <div class="flex-between">
-                        <h2>👤 Seller profile</h2>
-                        <button class="primary" id="editProfileBtn" style="padding: 0.5rem 1.2rem; font-size: 0.9rem;">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                    </div>
-                    <div id="profileInfo" class="profile-info">
-                        <div class="stat-card">
-                            <p style="margin-bottom: 0.8rem;"><i class="fas fa-user"></i> <strong>Name:</strong> <span id="profileName"></span></p>
-                            <p style="margin-bottom: 0.8rem;"><i class="fas fa-phone"></i> <strong>Phone:</strong> <span id="profilePhone"></span></p>
-                            <p><i class="fas fa-id-badge"></i> <strong>Role:</strong> Seller</p>
-                        </div>
-                    </div>
-                    <div id="profileEditForm" class="profile-edit-form">
-                        <div class="stat-card">
-                            <div class="form-group">
-                                <label>Name:</label>
-                                <input type="text" id="editName" placeholder="Enter your name">
-                            </div>
-                            <div class="form-group">
-                                <label>Phone:</label>
-                                <input type="text" id="editPhone" placeholder="Enter your phone">
-                            </div>
-                            <div style="display: flex; gap: 1rem;">
-                                <button class="primary" id="saveProfileBtn"><i class="fas fa-save"></i> Save Changes</button>
-                                <button class="secondary" id="cancelEditBtn">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="settings" class="section">
-                    <h2>⚙️ Settings</h2>
-                    <div class="settings-buttons">
-                        <button class="toggle-btn" id="themeToggle">
-                            <i id="themeIcon" class="fas fa-sun"></i>
-                            <span>Light / Dark</span>
-                        </button>
-                        <button class="toggle-btn" id="langToggle">
-                            <i class="fas fa-language"></i>
-                            <span id="langLabel">English</span>
-                        </button>
-                    </div>
-                </section>
+                <section id="settings" class="section"><h2>⚙️ Settings</h2><div class="settings-buttons"><button class="toggle-btn" id="themeToggle"><i id="themeIcon" class="fas fa-sun"></i><span>Light / Dark</span></button><button class="toggle-btn" id="langToggle"><i class="fas fa-language"></i><span id="langLabel">English</span></button></div></section>
             </main>
         </div>
     </div>
 
     <script>
         (function() {
-            // Get current user
             let currentUserId = localStorage.getItem('currentUserId');
-            if (currentUserId) {
-                currentUserId = Number(currentUserId);
-                if (isNaN(currentUserId)) currentUserId = null;
-            }
-
-            // Initialize localStorage defaults
+            if (currentUserId) { currentUserId = Number(currentUserId); if (isNaN(currentUserId)) currentUserId = null; }
             if (!localStorage.getItem('userName')) localStorage.setItem('userName', 'Amina Al-Rashid');
             if (!localStorage.getItem('userPhone')) localStorage.setItem('userPhone', '+966 50 123 4567');
             if (!localStorage.getItem('materials')) localStorage.setItem('materials', JSON.stringify([]));
             if (!localStorage.getItem('users')) {
-                localStorage.setItem('users', JSON.stringify([
-                    { id: 1, username: 'Amina Al-Rashid', phone: '+966 50 123 4567', role: 'seller', points: 0, weight: 0 }
-                ]));
+                localStorage.setItem('users', JSON.stringify([{ id: 1, username: 'Amina Al-Rashid', phone: '+966 50 123 4567', role: 'seller', points: 0, weight: 0 }]));
             }
-
             let materials = JSON.parse(localStorage.getItem('materials')) || [];
             let chartInstance = null;
+            let mapInitialized = false;
+            let currentMap = null;
+            let markersLayer = [];
 
-            function saveMaterials() {
-                localStorage.setItem('materials', JSON.stringify(materials));
-                renderAllSections();
+            // ---------- RECYCLING OUTLETS DATA (as per request) ----------
+            const recyclingOutlets = [
+                { name: "جهاز تنظيم إدارة المخلفات (وزارة البيئة)", city: "القاهرة", address: "التجمع الخامس – القاهرة", lat: 30.0095, lng: 31.4292, type: "تنسيق/إداري" },
+                { name: "محطة المناولة بالمقطم", city: "القاهرة", address: "المقطم – القاهرة", lat: 30.0211, lng: 31.2683, type: "مركز حكومي" },
+                { name: "محطة السلام", city: "القاهرة", address: "السلام – القاهرة", lat: 30.1318, lng: 31.3145, type: "محطة وسيطة" },
+                { name: "مدفن العاشر من رمضان الصحي", city: "الشرقية", address: "العاشر من رمضان", lat: 30.3016, lng: 31.6948, type: "مدفن صحي" },
+                { name: "محطة الناصرية (برج العرب)", city: "الإسكندرية", address: "برج العرب – الإسكندرية", lat: 30.9177, lng: 29.5661, type: "محطة حكومية" },
+                { name: "مدفن الحمام الصحي", city: "الإسكندرية", address: "الحمام – الإسكندرية", lat: 31.0575, lng: 29.8146, type: "مدفن صحي" },
+                { name: "مصنع سندوب لتدوير القمامة", city: "الدقهلية", address: "المنصورة – سندوب", lat: 31.0411, lng: 31.3922, type: "مصنع تدوير" },
+                { name: "مدفن قلابشو الصحي – بلقاس", city: "الدقهلية", address: "بلقاس", lat: 31.2227, lng: 31.3633, type: "مدفن" },
+                { name: "مصنع شبرامنت لتدوير المخلفات", city: "الجيزة", address: "شبرامنت – الجيزة", lat: 29.905, lng: 31.204, type: "مصنع تدوير" },
+                { name: "مدفن أبو رواش الصحي", city: "الجيزة", address: "أبو رواش – الجيزة", lat: 30.0952, lng: 31.0871, type: "مدفن صحي" },
+                { name: "مدفن أبو زعبل", city: "القليوبية", address: "أبو زعبل – القليوبية", lat: 30.2581, lng: 31.3619, type: "مدفن صحي" },
+                { name: "مصنع سمسطا", city: "بني سويف", address: "سمسطا – بني سويف", lat: 28.9804, lng: 30.6973, type: "مصنع تدوير" },
+                { name: "مصنع غرب طهطا", city: "سوهاج", address: "غرب طهطا – سوهاج", lat: 26.7667, lng: 31.6247, type: "مصنع تدوير" },
+                { name: "مصنع قوص", city: "قنا", address: "قوص – قنا", lat: 25.9162, lng: 32.7637, type: "مصنع تدوير" },
+                { name: "مناطق صناعية تدوير (العاشر)", city: "الشرقية", address: "مناطق صناعية – العاشر", lat: 30.3112, lng: 31.7204, type: "منطقة تدوير" }
+            ];
+
+            function saveMaterials() { localStorage.setItem('materials', JSON.stringify(materials)); renderAllSections(); }
+            function renderAllSections() { renderMyMaterials(); renderStatistics(); renderOverview(); renderRewards(); renderProfile(); }
+            function renderProfile() { document.getElementById('profileName').innerText = localStorage.getItem('userName') || '—'; document.getElementById('profilePhone').innerText = localStorage.getItem('userPhone') || '—'; }
+            function renderRewards() { const userMaterials = currentUserId ? materials.filter(m => String(m.userId) === String(currentUserId)) : []; const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.pointsByOutlet) || 0), 0); document.getElementById('rewardPoints').innerText = totalPoints; const percent = Math.min(100, (totalPoints / 1000) * 100); document.getElementById('milestoneBar').style.width = percent + '%'; document.getElementById('milestoneText').innerText = totalPoints + '/1000'; }
+            function renderOverview() { const userMaterials = currentUserId ? materials.filter(m => String(m.userId) === String(currentUserId)) : []; const totalMaterials = userMaterials.length; const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.pointsByOutlet) || 0), 0); const totalGrams = userMaterials.reduce((acc, m) => acc + (Number(m.weight) || 0), 0); document.getElementById('overviewTotalMaterials').innerText = totalMaterials; document.getElementById('overviewTotalPoints').innerText = totalPoints; document.getElementById('impactText').innerHTML = `You helped recycle <strong>${totalGrams}g</strong> of materials. Keep saving the planet! 🌱`; const recent = [...userMaterials].reverse().slice(0, 3); const container = document.getElementById('recentUploads'); container.innerHTML = ''; recent.forEach(m => { const card = document.createElement('div'); card.className = 'material-card'; card.innerHTML = `<i class="fas fa-trash delete-icon" data-id="${m.id}"></i><img src="${m.imageBase64 || 'https://via.placeholder.com/150?text=recycle'}" alt="material"><p><strong>${m.name}</strong> ${m.weight}g</p><small>${new Date(m.date).toLocaleDateString()}</small>`; container.appendChild(card); }); }
+            function renderMyMaterials() { const container = document.getElementById('materialsList'); container.innerHTML = ''; const userMaterials = currentUserId ? materials.filter(m => String(m.userId) === String(currentUserId)) : []; if (userMaterials.length === 0) { container.innerHTML = '<p class="stat-card">No materials added yet.</p>'; return; } userMaterials.slice().reverse().forEach(m => { const card = document.createElement('div'); card.className = 'material-card'; card.innerHTML = `<i class="fas fa-trash delete-icon" data-id="${m.id}"></i><img src="${m.imageBase64 || 'https://via.placeholder.com/150?text=BEKYA'}" alt="img"><div class="flex-between"><span>${m.name}</span><span class="badge">${m.weight}g</span></div><div class="flex-between"><span>⭐ ${(Number(m.pointsByOutlet)||0)} pts ${m.sold ? '· Sold' : ''}</span><small>${new Date(m.date).toLocaleDateString()}</small></div>`; container.appendChild(card); }); }
+            function renderStatistics() { const userMaterials = currentUserId ? materials.filter(m => String(m.userId) === String(currentUserId)) : []; const totalGrams = userMaterials.reduce((acc, m) => acc + (Number(m.weight) || 0), 0); const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.pointsByOutlet) || 0), 0); const uploads = userMaterials.length; document.getElementById('statTotalGrams').innerText = totalGrams; document.getElementById('statTotalPoints').innerText = totalPoints; document.getElementById('statUploads').innerText = uploads; const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000; const last24 = userMaterials.filter(m => (now - new Date(m.date).getTime()) <= oneDay).reduce((acc, m) => acc + (Number(m.weight) || 0), 0); const prev24 = userMaterials.filter(m => { const diff = now - new Date(m.date).getTime(); return diff > oneDay && diff <= 2 * oneDay; }).reduce((acc, m) => acc + (Number(m.weight) || 0), 0); let increase = 0; if (prev24 > 0) increase = ((last24 - prev24) / prev24) * 100; else if (last24 > 0) increase = 100; document.getElementById('hourlyIncrease').innerText = (increase > 0 ? '+' : '') + increase.toFixed(1) + '%'; document.getElementById('increaseBar').style.width = Math.min(100, Math.abs(increase)) + '%'; const ctx = document.getElementById('statsChart').getContext('2d'); if (chartInstance) chartInstance.destroy(); const types = [...new Set(userMaterials.map(m => m.name))]; const pointsByType = types.map(t => userMaterials.filter(m => m.name === t).reduce((acc, m) => acc + (Number(m.pointsByOutlet) || 0), 0)); if (types.length > 0) { chartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: types, datasets: [{ data: pointsByType, backgroundColor: ['#0A3D2A', '#2f8e6b', '#6abf8a', '#a3d9b1'], borderWidth: 0 }] } }); } }
+
+            // MAP INITIALIZATION
+            function initMap() {
+                if (!mapInitialized) {
+                    const mapDiv = document.getElementById('recyclingMap');
+                    if (mapDiv) {
+                        currentMap = L.map('recyclingMap').setView([30.0444, 31.2357], 7);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> & CartoDB', subdomains: 'abcd' }).addTo(currentMap);
+                        mapInitialized = true;
+                        addMarkersAndList();
+                    }
+                } else {
+                    if (currentMap) addMarkersAndList();
+                }
             }
-
-            function renderAllSections() {
-                renderMyMaterials();
-                renderStatistics();
-                renderOverview();
-                renderRewards();
-                renderProfile();
-            }
-
-            function renderProfile() {
-                document.getElementById('profileName').innerText = localStorage.getItem('userName') || '—';
-                document.getElementById('profilePhone').innerText = localStorage.getItem('userPhone') || '—';
-            }
-
-            function renderRewards() {
-                const userMaterials = currentUserId ? materials.filter(m => String(m.userId) === String(currentUserId)) : [];
-                const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.pointsByOutlet) || 0), 0);
-                document.getElementById('rewardPoints').innerText = totalPoints;
-                const percent = Math.min(100, (totalPoints / 1000) * 100);
-                document.getElementById('milestoneBar').style.width = percent + '%';
-                document.getElementById('milestoneText').innerText = totalPoints + '/1000';
-            }
-
-            function renderOverview() {
-                const userMaterials = currentUserId ? materials.filter(m => String(m.userId) === String(currentUserId)) : [];
-                const totalMaterials = userMaterials.length;
-                const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.pointsByOutlet) || 0), 0);
-                const totalGrams = userMaterials.reduce((acc, m) => acc + (Number(m.weight) || 0), 0);
-
-                document.getElementById('overviewTotalMaterials').innerText = totalMaterials;
-                document.getElementById('overviewTotalPoints').innerText = totalPoints;
-                document.getElementById('impactText').innerHTML = `You helped recycle <strong>${totalGrams}g</strong> of materials. Keep saving the planet! 🌱`;
-
-                const recent = [...userMaterials].reverse().slice(0, 3);
-                const container = document.getElementById('recentUploads');
+            function addMarkersAndList() {
+                if (!currentMap) return;
+                if (markersLayer.length) { markersLayer.forEach(m => currentMap.removeLayer(m)); markersLayer = []; }
+                const container = document.getElementById('outletListContainer');
                 container.innerHTML = '';
-                recent.forEach(m => {
-                    const card = document.createElement('div');
-                    card.className = 'material-card';
-                    card.innerHTML = `
-                        <i class="fas fa-trash delete-icon" data-id="${m.id}"></i>
-                        <img src="${m.imageBase64 || 'https://via.placeholder.com/150?text=recycle'}" alt="material">
-                        <p><strong>${m.name}</strong> ${m.weight}g</p>
-                        <small>${new Date(m.date).toLocaleDateString()}</small>
-                    `;
+                recyclingOutlets.forEach(outlet => {
+                    const marker = L.marker([outlet.lat, outlet.lng]).addTo(currentMap);
+                    marker.bindPopup(`<b>${outlet.name}</b><br>${outlet.address}<br>🏭 ${outlet.type}`);
+                    markersLayer.push(marker);
+                    const card = document.createElement('div'); card.className = 'outlet-card';
+                    card.innerHTML = `<h4><i class="fas fa-map-pin"></i> ${outlet.name}</h4><p>📍 ${outlet.address}<br>🗺️ ${outlet.city} · ${outlet.type}</p>`;
+                    card.addEventListener('click', () => { currentMap.setView([outlet.lat, outlet.lng], 14); marker.openPopup(); });
                     container.appendChild(card);
                 });
             }
 
-            function renderMyMaterials() {
-                const container = document.getElementById('materialsList');
-                container.innerHTML = '';
-                const userMaterials = currentUserId ? materials.filter(m => String(m.userId) === String(currentUserId)) : [];
+            function addMaterialToStore(name, weight, imageBase64) { const newMaterial = { id: Date.now(), name, weight, points: 0, date: new Date().toISOString(), imageBase64: imageBase64 || null, userId: currentUserId, userName: localStorage.getItem('userName') || 'Unknown', sold: false, pointsByOutlet: Math.floor(weight * 0.5) }; materials.push(newMaterial); saveMaterials(); document.getElementById('materialWeightInput').value = ''; document.getElementById('materialImageInput').value = ''; alert('Material added successfully!'); switchSection('myMaterials'); }
+            function deleteMaterial(id) { if (confirm('Delete this material?')) { materials = materials.filter(m => String(m.id) !== String(id)); saveMaterials(); } }
+            function switchSection(sectionId) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section')); const target = document.getElementById(sectionId); if (target) target.classList.add('active-section'); document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active')); const activeItem = document.querySelector(`.menu-item[data-section="${sectionId}"]`); if (activeItem) activeItem.classList.add('active'); if (sectionId === 'map' && !mapInitialized) { setTimeout(() => initMap(), 100); } else if (sectionId === 'map' && currentMap) { setTimeout(() => currentMap.invalidateSize(), 150); } if (sectionId === 'statistics' && chartInstance) renderStatistics(); }
 
-                if (userMaterials.length === 0) {
-                    container.innerHTML = '<p class="stat-card">No materials added yet.</p>';
-                    return;
-                }
-
-                userMaterials.slice().reverse().forEach(m => {
-                    const card = document.createElement('div');
-                    card.className = 'material-card';
-                    card.innerHTML = `
-                        <i class="fas fa-trash delete-icon" data-id="${m.id}"></i>
-                        <img src="${m.imageBase64 || 'https://via.placeholder.com/150?text=BEKYA'}" alt="img">
-                        <div class="flex-between"><span>${m.name}</span><span class="badge">${m.weight}g</span></div>
-                        <div class="flex-between"><span>⭐ ${(Number(m.pointsByOutlet)||0)} pts ${m.sold ? '· Sold' : ''}</span><small>${new Date(m.date).toLocaleDateString()}</small></div>
-                    `;
-                    container.appendChild(card);
-                });
-            }
-
-            function renderStatistics() {
-                const userMaterials = currentUserId ? materials.filter(m => String(m.userId) === String(currentUserId)) : [];
-                const totalGrams = userMaterials.reduce((acc, m) => acc + (Number(m.weight) || 0), 0);
-                const totalPoints = userMaterials.reduce((acc, m) => acc + (Number(m.pointsByOutlet) || 0), 0);
-                const uploads = userMaterials.length;
-
-                document.getElementById('statTotalGrams').innerText = totalGrams;
-                document.getElementById('statTotalPoints').innerText = totalPoints;
-                document.getElementById('statUploads').innerText = uploads;
-
-                const now = Date.now();
-                const oneDay = 24 * 60 * 60 * 1000;
-                const last24 = userMaterials.filter(m => (now - new Date(m.date).getTime()) <= oneDay).reduce((acc, m) => acc + (Number(m.weight) || 0), 0);
-                const prev24 = userMaterials.filter(m => {
-                    const diff = now - new Date(m.date).getTime();
-                    return diff > oneDay && diff <= 2 * oneDay;
-                }).reduce((acc, m) => acc + (Number(m.weight) || 0), 0);
-
-                let increase = 0;
-                if (prev24 > 0) increase = ((last24 - prev24) / prev24) * 100;
-                else if (last24 > 0) increase = 100;
-
-                document.getElementById('hourlyIncrease').innerText = (increase > 0 ? '+' : '') + increase.toFixed(1) + '%';
-                document.getElementById('increaseBar').style.width = Math.min(100, Math.abs(increase)) + '%';
-
-                const ctx = document.getElementById('statsChart').getContext('2d');
-                if (chartInstance) chartInstance.destroy();
-
-                const types = [...new Set(userMaterials.map(m => m.name))];
-                const pointsByType = types.map(t => userMaterials.filter(m => m.name === t).reduce((acc, m) => acc + (Number(m.pointsByOutlet) || 0), 0));
-
-                if (types.length > 0) {
-                    chartInstance = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: types,
-                            datasets: [{
-                                data: pointsByType,
-                                backgroundColor: ['#0A3D2A', '#2f8e6b', '#6abf8a', '#a3d9b1'],
-                                borderWidth: 0
-                            }]
-                        }
-                    });
-                }
-            }
-
-            // ADD MATERIAL - FIXED
-            const addMaterialForm = document.getElementById('addMaterialForm');
-            addMaterialForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                console.log('Form submitted'); // Debug log
-                
-                const nameSelect = document.getElementById('materialNameSelect');
-                const weightInput = document.getElementById('materialWeightInput');
-                const fileInput = document.getElementById('materialImageInput');
-                
-                const name = nameSelect ? nameSelect.value : '';
-                const weight = parseFloat(weightInput ? weightInput.value : '0');
-                
-                console.log('Name:', name, 'Weight:', weight); // Debug log
-                
-                if (!name) {
-                    alert('Please select a material type');
-                    return;
-                }
-                if (!weight || weight <= 0 || isNaN(weight)) {
-                    alert('Please enter a valid weight (greater than 0)');
-                    return;
-                }
-                
-                const file = fileInput.files && fileInput.files[0];
-                
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(evt) {
-                        addMaterialToStore(name, weight, evt.target.result);
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    addMaterialToStore(name, weight, null);
-                }
-            });
-
-            function addMaterialToStore(name, weight, imageBase64) {
-                const newMaterial = {
-                    id: Date.now(),
-                    name: name,
-                    weight: weight,
-                    points: 0,
-                    date: new Date().toISOString(),
-                    imageBase64: imageBase64 || null,
-                    userId: currentUserId,
-                    userName: localStorage.getItem('userName') || 'Unknown',
-                    sold: false,
-                    pointsByOutlet: 0
-                };
-                
-                materials.push(newMaterial);
-                saveMaterials();
-                
-                // Clear form
-                const weightInput = document.getElementById('materialWeightInput');
-                const fileInput = document.getElementById('materialImageInput');
-                if (weightInput) weightInput.value = '';
-                if (fileInput) fileInput.value = '';
-                
-                alert('Material added successfully!');
-                
-                // Switch to My Materials view
-                switchSection('myMaterials');
-            }
-
-            // Delete material
-            function deleteMaterial(id) {
-                if (confirm('Are you sure you want to delete this material?')) {
-                    const index = materials.findIndex(m => String(m.id) === String(id));
-                    if (index !== -1) {
-                        materials.splice(index, 1);
-                        saveMaterials();
-                    }
-                }
-            }
-
-            // Navigation
-            const menuItems = document.querySelectorAll('.menu-item');
-            const sections = document.querySelectorAll('.section');
-
-            function switchSection(sectionId) {
-                sections.forEach(s => s.classList.remove('active-section'));
-                const targetSection = document.getElementById(sectionId);
-                if (targetSection) targetSection.classList.add('active-section');
-                
-                menuItems.forEach(item => item.classList.remove('active'));
-                const activeMenuItem = document.querySelector(`.menu-item[data-section="${sectionId}"]`);
-                if (activeMenuItem) activeMenuItem.classList.add('active');
-                
-                if (sectionId === 'statistics' && chartInstance) renderStatistics();
-            }
-
-            menuItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    const section = item.getAttribute('data-section');
-                    if (section) switchSection(section);
-                    if (window.innerWidth <= 1024) {
-                        document.getElementById('sidebar').classList.remove('active');
-                        document.getElementById('sidebarOverlay').classList.remove('active');
-                    }
-                });
-            });
-
-            // Sidebar toggle
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-            function toggleSidebar() {
-                if (window.innerWidth <= 1024) {
-                    sidebar.classList.toggle('active');
-                    sidebarOverlay.classList.toggle('active');
-                } else {
-                    sidebar.classList.toggle('collapsed');
-                }
-            }
-
-            sidebarToggle.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-
-            // Theme
-            const themeToggle = document.getElementById('themeToggle');
-            const themeIcon = document.getElementById('themeIcon');
-            const body = document.body;
-
-            function setTheme(theme) {
-                if (theme === 'dark') {
-                    body.classList.add('dark');
-                    if (themeIcon) themeIcon.className = 'fas fa-moon';
-                } else {
-                    body.classList.remove('dark');
-                    if (themeIcon) themeIcon.className = 'fas fa-sun';
-                }
-                localStorage.setItem('bekyaTheme', theme);
-            }
-
-            themeToggle.addEventListener('click', () => {
-                const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
-                setTheme(newTheme);
-            });
-
-            const savedTheme = localStorage.getItem('bekyaTheme') || 'light';
-            setTheme(savedTheme);
-
-            // Language
-            let currentLang = localStorage.getItem('bekyaLang') || 'en';
-            const langToggle = document.getElementById('langToggle');
-            const langLabel = document.getElementById('langLabel');
-
-            function setLanguage(lang) {
-                currentLang = lang;
-                localStorage.setItem('bekyaLang', lang);
-                if (lang === 'ar') {
-                    document.body.dir = 'rtl';
-                    if (langLabel) langLabel.innerText = 'عربي';
-                } else {
-                    document.body.dir = 'ltr';
-                    if (langLabel) langLabel.innerText = 'English';
-                }
-                renderAllSections();
-                if (chartInstance) renderStatistics();
-            }
-
-            langToggle.addEventListener('click', () => {
-                const newLang = currentLang === 'en' ? 'ar' : 'en';
-                setLanguage(newLang);
-            });
-
-            setLanguage(savedTheme === 'ar' ? 'ar' : 'en');
-
-            // Delete event listeners
-            document.getElementById('materialsList').addEventListener('click', function(e) {
-                const deleteIcon = e.target.closest('.delete-icon');
-                if (deleteIcon) {
-                    e.preventDefault();
-                    deleteMaterial(deleteIcon.dataset.id);
-                }
-            });
-
-            document.getElementById('recentUploads').addEventListener('click', function(e) {
-                const deleteIcon = e.target.closest('.delete-icon');
-                if (deleteIcon) {
-                    e.preventDefault();
-                    deleteMaterial(deleteIcon.dataset.id);
-                }
-            });
-
-            // Logout
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                if (confirm('Are you sure you want to logout?')) {
-                    localStorage.removeItem('currentUserId');
-                    window.location.href = 'login.html';
-                }
-            });
-
-            // Profile editing
-            const editProfileBtn = document.getElementById('editProfileBtn');
-            const profileInfo = document.getElementById('profileInfo');
-            const profileEditForm = document.getElementById('profileEditForm');
-            const saveProfileBtn = document.getElementById('saveProfileBtn');
-            const cancelEditBtn = document.getElementById('cancelEditBtn');
-
-            editProfileBtn.addEventListener('click', () => {
-                profileInfo.classList.add('hidden');
-                profileEditForm.classList.add('active');
-                document.getElementById('editName').value = localStorage.getItem('userName') || '';
-                document.getElementById('editPhone').value = localStorage.getItem('userPhone') || '';
-            });
-
-            cancelEditBtn.addEventListener('click', () => {
-                profileInfo.classList.remove('hidden');
-                profileEditForm.classList.remove('active');
-            });
-
-            saveProfileBtn.addEventListener('click', () => {
-                const newName = document.getElementById('editName').value.trim();
-                const newPhone = document.getElementById('editPhone').value.trim();
-                if (!newName || !newPhone) {
-                    alert('Please fill all fields');
-                    return;
-                }
-                localStorage.setItem('userName', newName);
-                localStorage.setItem('userPhone', newPhone);
-                
-                // Update users list
-                let users = JSON.parse(localStorage.getItem('users') || '[]');
-                const userIndex = users.findIndex(u => String(u.id) === String(currentUserId));
-                if (userIndex > -1) {
-                    users[userIndex].username = newName;
-                    users[userIndex].phone = newPhone;
-                    localStorage.setItem('users', JSON.stringify(users));
-                }
-                
-                renderProfile();
-                profileInfo.classList.remove('hidden');
-                profileEditForm.classList.remove('active');
-                alert('Profile updated successfully!');
-            });
-
-            // Initial render
-            renderAllSections();
-            switchSection('overview');
+            document.getElementById('addMaterialForm').addEventListener('submit', function(e) { e.preventDefault(); const name = document.getElementById('materialNameSelect').value; const weight = parseFloat(document.getElementById('materialWeightInput').value); if (!name || !weight || weight <= 0) { alert('Valid weight required'); return; } const file = document.getElementById('materialImageInput').files[0]; if (file) { const reader = new FileReader(); reader.onload = ev => addMaterialToStore(name, weight, ev.target.result); reader.readAsDataURL(file); } else { addMaterialToStore(name, weight, null); } });
+            document.getElementById('materialsList').addEventListener('click', e => { const del = e.target.closest('.delete-icon'); if (del) deleteMaterial(del.dataset.id); });
+            document.getElementById('recentUploads').addEventListener('click', e => { const del = e.target.closest('.delete-icon'); if (del) deleteMaterial(del.dataset.id); });
+            document.getElementById('logoutBtn').addEventListener('click', () => { if (confirm('Logout?')) { localStorage.removeItem('currentUserId'); window.location.href = 'login.html'; } });
+            const editProfileBtn = document.getElementById('editProfileBtn'), profileInfo = document.getElementById('profileInfo'), profileEditForm = document.getElementById('profileEditForm'), saveProfileBtn = document.getElementById('saveProfileBtn'), cancelEditBtn = document.getElementById('cancelEditBtn');
+            editProfileBtn.addEventListener('click', () => { profileInfo.classList.add('hidden'); profileEditForm.classList.add('active'); document.getElementById('editName').value = localStorage.getItem('userName') || ''; document.getElementById('editPhone').value = localStorage.getItem('userPhone') || ''; });
+            cancelEditBtn.addEventListener('click', () => { profileInfo.classList.remove('hidden'); profileEditForm.classList.remove('active'); });
+            saveProfileBtn.addEventListener('click', () => { const newName = document.getElementById('editName').value.trim(); const newPhone = document.getElementById('editPhone').value.trim(); if (newName && newPhone) { localStorage.setItem('userName', newName); localStorage.setItem('userPhone', newPhone); let users = JSON.parse(localStorage.getItem('users') || '[]'); const idx = users.findIndex(u => String(u.id) === String(currentUserId)); if (idx > -1) { users[idx].username = newName; users[idx].phone = newPhone; localStorage.setItem('users', JSON.stringify(users)); } renderProfile(); profileInfo.classList.remove('hidden'); profileEditForm.classList.remove('active'); alert('Profile updated!'); } else alert('Fill all fields'); });
+            const menuItems = document.querySelectorAll('.menu-item'); menuItems.forEach(item => { item.addEventListener('click', () => { const section = item.getAttribute('data-section'); if (section) switchSection(section); if (window.innerWidth <= 1024) { document.getElementById('sidebar').classList.remove('active'); document.getElementById('sidebarOverlay').classList.remove('active'); } }); });
+            const sidebar = document.getElementById('sidebar'), sidebarToggle = document.getElementById('sidebarToggle'), sidebarOverlay = document.getElementById('sidebarOverlay');
+            function toggleSidebar() { if (window.innerWidth <= 1024) { sidebar.classList.toggle('active'); sidebarOverlay.classList.toggle('active'); } else { sidebar.classList.toggle('collapsed'); } }
+            sidebarToggle.addEventListener('click', toggleSidebar); sidebarOverlay.addEventListener('click', toggleSidebar);
+            const themeToggle = document.getElementById('themeToggle'), themeIcon = document.getElementById('themeIcon'), body = document.body;
+            function setTheme(theme) { if (theme === 'dark') { body.classList.add('dark'); if(themeIcon) themeIcon.className = 'fas fa-moon'; } else { body.classList.remove('dark'); if(themeIcon) themeIcon.className = 'fas fa-sun'; } localStorage.setItem('bekyaTheme', theme); }
+            themeToggle.addEventListener('click', () => { setTheme(body.classList.contains('dark') ? 'light' : 'dark'); });
+            setTheme(localStorage.getItem('bekyaTheme') || 'light');
+            let currentLang = localStorage.getItem('bekyaLang') || 'en'; const langToggle = document.getElementById('langToggle'), langLabel = document.getElementById('langLabel');
+            function setLanguage(lang) { currentLang = lang; localStorage.setItem('bekyaLang', lang); if (lang === 'ar') { document.body.dir = 'rtl'; if(langLabel) langLabel.innerText = 'عربي'; } else { document.body.dir = 'ltr'; if(langLabel) langLabel.innerText = 'English'; } renderAllSections(); if(chartInstance) renderStatistics(); if(mapInitialized && currentMap) currentMap.invalidateSize(); }
+            langToggle.addEventListener('click', () => { setLanguage(currentLang === 'en' ? 'ar' : 'en'); });
+            setLanguage(currentLang);
+            renderAllSections(); switchSection('overview');
         })();
     </script>
 </body>
